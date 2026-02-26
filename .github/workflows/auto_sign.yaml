@@ -1,8 +1,9 @@
 # run main.py
-name: Auto Sign
-on:
+name: Auto Signon:
+  workflow_dispatch: # 允许手动触发
   schedule:
-    - cron: '0 1 * * *'
+    # 每天 UTC 时间 0点 和 12点（对应北京时间 8点 和 20点）执行
+    - cron: '0 0,12 * * *'
   workflow_dispatch:
 jobs:
   build:
