@@ -1,10 +1,10 @@
 # run main.py
-name: Auto Signon:
+name: Auto Sign
+on:
   workflow_dispatch: # 允许手动触发
   schedule:
     # 每天 UTC 时间 0点 和 12点（对应北京时间 8点 和 20点）执行
     - cron: '0 0,12 * * *'
-  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
