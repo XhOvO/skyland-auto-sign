@@ -11,6 +11,30 @@ from skyland import start
 
 exit_when_fail_env = os.environ.get('EXIT_WHEN_FAIL')
 use_proxy = os.environ.get('USE_PROXY')
+request_timeout_seconds = float(os.environ.get('REQUEST_TIMEOUT_SECONDS', '30'))
+request_max_retries = int(os.environ.get('REQUEST_MAX_RETRIES', '2'))
+request_retry_delay_seconds = float(os.environ.get('REQUEST_RETRY_DELAY_SECONDS', '3'))
+
+
+def request_with_retry(request_method, method_name, url, *args, **kwargs):
+    kwargs.setdefault('timeout', request_timeout_seconds)
+    for attempt in range(request_max_retries + 1):
+        try:
+            return request_method(url, *args, **kwargs)
+        except requests.exceptions.RequestException as ex:
+            if attempt >= request_max_retries:
+                raise
+            delay = request_retry_delay_seconds * (attempt + 1)
+            logging.warning(
+                '%s %s 请求失败（第%d/%d次）：%s，%s秒后重试',
+                method_name.upper(),
+                url,
+                attempt + 1,
+                request_max_retries + 1,
+                ex,
+                delay
+            )
+            time.sleep(delay)
 
 def config_logger():
     current_date = date.today().strftime('%Y-%m-%d')
@@ -57,7 +81,7 @@ def config_logger():
                 },
                 'verify': False
             })
-        response = _get(*args, **kwargs)
+        response = request_with_retry(_get, 'get', args[0], *args[1:], **kwargs)
         logger.debug(f'GET {args[0]} - {response.status_code} - {filter_code(response.text)}')
         return response
 
@@ -69,7 +93,7 @@ def config_logger():
                 },
                 'verify': False
             })
-        response = _post(*args, **kwargs)
+        response = request_with_retry(_post, 'post', args[0], *args[1:], **kwargs)
         logger.debug(f'POST {args[0]} - {response.status_code} - {filter_code(response.text)}')
         return response
 
